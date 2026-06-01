@@ -479,6 +479,11 @@ input[type=date]{color-scheme:dark}
         </select>
         <div class="form-hint" id="providerHint"></div>
       </div>
+      <div class="form-group" id="modelGroup">
+        <div class="form-label"><i class="ti ti-box"></i>Modèle</div>
+        <select class="form-select" id="aiModel"></select>
+        <div class="form-hint">Si vous obtenez « quota / limit: 0 », essayez un autre modèle.</div>
+      </div>
       <div class="form-group">
         <div class="form-label"><i class="ti ti-key"></i>Clé API</div>
         <input class="form-input" id="aiKey" type="password" placeholder="Collez votre clé API ici">
@@ -516,6 +521,11 @@ input[type=date]{color-scheme:dark}
 const SUPABASE_URL='https://qlogkvxcomhqelcpzvpr.supabase.co';
 const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFsb2drdnhjb21ocWVsY3B6dnByIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAzMDQ3NzksImV4cCI6MjA5NTg4MDc3OX0.HtLqfMSsq63Ln_8qTzY5oJYiZagDYa0BF9phtlcp95Y';
 const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+
+/* ---- Valeurs IA par défaut (modifiables via l'icône ⚙️) ---- */
+const DEFAULT_AI_PROVIDER='gemini';
+const DEFAULT_GEMINI_KEY='AQ.Ab8lN6KIdowLFKDTMewG_k3PyHJ-8LApHqEaJAwmPMSkHvWw';
+const DEFAULT_GEMINI_MODEL='gemini-2.5-flash';
 
 let tasks=[];
 let projects=[];
@@ -969,28 +979,55 @@ function exportJSON(){
 }
 
 /* ===================== RÉGLAGES IA ===================== */
+const AI_MODELS={
+  gemini:[
+    {id:'gemini-2.5-flash',label:'Gemini 2.5 Flash (recommandé)'},
+    {id:'gemini-2.5-flash-lite',label:'Gemini 2.5 Flash-Lite (quota élevé)'},
+    {id:'gemini-flash-latest',label:'Gemini Flash (dernière version)'},
+    {id:'gemini-2.0-flash',label:'Gemini 2.0 Flash'},
+    {id:'gemini-2.0-flash-lite',label:'Gemini 2.0 Flash-Lite'},
+  ],
+  anthropic:[
+    {id:'claude-3-5-sonnet-20241022',label:'Claude 3.5 Sonnet'},
+    {id:'claude-3-5-haiku-20241022',label:'Claude 3.5 Haiku (moins cher)'},
+  ],
+};
 function getAiConfig(){
+  const provider=localStorage.getItem('megatv_ai_provider')||DEFAULT_AI_PROVIDER;
+  let key=localStorage.getItem('megatv_ai_key');
+  if(key===null||key==='')key=(provider==='gemini')?DEFAULT_GEMINI_KEY:'';
+  const defModel=(provider==='gemini')?DEFAULT_GEMINI_MODEL:AI_MODELS[provider][0].id;
   return{
-    provider:localStorage.getItem('megatv_ai_provider')||'gemini',
-    key:localStorage.getItem('megatv_ai_key')||'',
+    provider,
+    key:key||'',
+    model:localStorage.getItem('megatv_ai_model_'+provider)||defModel,
   };
+}
+function fillModelOptions(provider,selected){
+  const sel=document.getElementById('aiModel');
+  sel.innerHTML=AI_MODELS[provider].map(m=>`<option value="${m.id}">${m.label}</option>`).join('');
+  sel.value=selected&&AI_MODELS[provider].some(m=>m.id===selected)?selected:AI_MODELS[provider][0].id;
 }
 function openSettings(){
   const cfg=getAiConfig();
   document.getElementById('aiProvider').value=cfg.provider;
   document.getElementById('aiKey').value=cfg.key;
+  fillModelOptions(cfg.provider,cfg.model);
   onProviderChange();
   document.getElementById('settingsModal').style.display='flex';
 }
 function onProviderChange(){
   const prov=document.getElementById('aiProvider').value;
   const hint=document.getElementById('providerHint');
-  if(prov==='gemini')hint.innerHTML='Gratuit. Clé : <a href="https://aistudio.google.com/app/apikey" target="_blank">aistudio.google.com/app/apikey</a> → "Create API key".';
+  fillModelOptions(prov,localStorage.getItem('megatv_ai_model_'+prov));
+  if(prov==='gemini')hint.innerHTML='Gratuit. Clé : <a href="https://aistudio.google.com/app/apikey" target="_blank">aistudio.google.com/app/apikey</a>. Si « limit: 0 », régénérez la clé via « Create API key in new project ».';
   else hint.innerHTML='Clé : <a href="https://console.anthropic.com/settings/keys" target="_blank">console.anthropic.com</a>. (Crédits requis.)';
 }
 function saveSettings(){
-  localStorage.setItem('megatv_ai_provider',document.getElementById('aiProvider').value);
+  const provider=document.getElementById('aiProvider').value;
+  localStorage.setItem('megatv_ai_provider',provider);
   localStorage.setItem('megatv_ai_key',document.getElementById('aiKey').value.trim());
+  localStorage.setItem('megatv_ai_model_'+provider,document.getElementById('aiModel').value);
   document.getElementById('settingsModal').style.display='none';
   updateProviderTag();
   showToast('Réglages enregistrés','success');
@@ -1060,7 +1097,7 @@ async function callAI(prompt){
   const cfg=getAiConfig();
   if(!cfg.key)throw new Error('NO_KEY');
   if(cfg.provider==='gemini'){
-    const url=`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${encodeURIComponent(cfg.key)}`;
+    const url=`https://generativelanguage.googleapis.com/v1beta/models/${cfg.model}:generateContent?key=${encodeURIComponent(cfg.key)}`;
     const res=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
       contents:[{parts:[{text:prompt}]}],
       generationConfig:{temperature:0.3,responseMimeType:'application/json'}
@@ -1075,7 +1112,7 @@ async function callAI(prompt){
       'anthropic-version':'2023-06-01',
       'anthropic-dangerous-direct-browser-access':'true'
     },body:JSON.stringify({
-      model:'claude-3-5-sonnet-20241022',max_tokens:4000,
+      model:cfg.model,max_tokens:4000,
       system:'Réponds UNIQUEMENT en JSON valide, sans markdown, sans backticks.',
       messages:[{role:'user',content:prompt}]
     })});
@@ -1120,7 +1157,14 @@ async function analyzeNotes(){
     document.getElementById('analyzeBtn').disabled=false;
     const el=document.getElementById('notesError');
     el.style.display='block';
-    el.textContent=err.message==='NO_KEY'?'Aucune clé API configurée (icône ⚙️).':('Erreur : '+err.message);
+    const m=err.message||'';
+    if(m==='NO_KEY'){
+      el.textContent='Aucune clé API configurée (icône ⚙️).';
+    }else if(/quota|limit|rate/i.test(m)){
+      el.innerHTML='Quota épuisé pour ce modèle. Ouvrez ⚙️ et <strong>changez de modèle</strong> (ex. Gemini 2.5 Flash-Lite), ou régénérez votre clé via « Create API key in new project ».<br><br><span style="color:var(--text3)">Détail : '+esc(m)+'</span>';
+    }else{
+      el.textContent='Erreur : '+m;
+    }
   }
 }
 

@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Mon Kanban App</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body { font-family: sans-serif; background: #f4f4f9; padding: 20px; }
+        .board { display: flex; gap: 10px; overflow-x: auto; align-items: flex-start; }
+        .column { background: #ddd; padding: 10px; border-radius: 5px; min-width: 200px; min-height: 80vh; }
+        .card { background: white; padding: 10px; margin: 10px 0; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); cursor: grab; }
+        .version { font-size: 0.7em; color: #888; margin-top: 5px; }
+    </style>
+</head>
+<body>
+
+<div class="board" id="board">
+    <div class="column" data-status="En attente" ondrop="drop(event)" ondragover="allowDrop(event)"><h3>En attente</h3></div>
+    <div class="column" data-status="En cours de développement" ondrop="drop(event)" ondragover="allowDrop(event)"><h3>En dev</h3></div>
+    <div class="column" data-status="En cours de vérification" ondrop="drop(event)" ondragover="allowDrop(event)"><h3>En vérif</h3></div>
+    <div class="column" data-status="Terminé" ondrop="drop(event)" ondragover="allowDrop(event)"><h3>Terminé</h3></div>
+    <div class="column" data-status="Bloqué" ondrop="drop(event)" ondragover="allowDrop(event)"><h3>Bloqué</h3></div>
+</div>
+
+<script>
+    const supabase = supabase.createClient(
+        'https://qlogkvxcomhqelcpzvpr.supabase.co', 
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFsb2drdnhjb21ocWVsY3B6dnByIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAzMDQ3NzksImV4cCI6MjA5NTg4MDc3OX0.HtLqfMSsq63Ln_8qTzY5oJYiZagDYa0BF9phtlcp95Y'
+    );
+    
+    let tasks = [];
+
+    async function loadTasks() {
+        const { data } = await supabase.from('tasks').select('*');
+        tasks = data || [];
+        render();
+    }
+
+    function render() {
+        document.querySelectorAll('.column').forEach(col => {
+            const status = col.getAttribute('data-status');
+            col.innerHTML = `<h3>${status}</h3>`;
+            tasks.filter(t => t.status === status).sort((a,b) => a.priority - b.priority).forEach(task => {
+                const div = document.createElement('div');
+                div.className = 'card';
+                div.draggable = true;
+                div.id = task.id;
+                div.ondragstart = (e) => e.dataTransfer.setData("text", e.target.id);
+                div.innerHTML = `<h4>${task.title}</h4><div class="version">v${task.version} | ${task.category}</div>`;
+                col.appendChild(div);
+            });
+        });
+    }
+
+    function allowDrop(e) { e.preventDefault(); }
+    
+    async function drop(e) {
+        e.preventDefault();
+        const id = e.dataTransfer.getData("text");
+        const status = e.target.closest('.column').getAttribute('data-status');
+        
+        // Mise à jour base de données
+        await supabase.from('tasks').update({ status: status }).eq('id', id);
+        
+        // Mise à jour visuelle locale
+        tasks.find(t => t.id == id).status = status;
+        render();
+    }
+
+    loadTasks();
+</script>
+</body>
+</html>

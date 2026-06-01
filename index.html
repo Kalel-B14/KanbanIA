@@ -363,6 +363,13 @@ input[type=date]{color-scheme:dark}
         <div class="form-label"><i class="ti ti-align-left"></i>Description</div>
         <textarea class="form-textarea" id="taskDesc" placeholder="Contexte, détails, reproductibilité..."></textarea>
       </div>
+      <div class="form-group" id="retourCursorGroup">
+        <div class="form-label"><i class="ti ti-robot" style="color:var(--accent2)"></i>Retour Cursor</div>
+        <textarea class="form-textarea" id="taskRetour" placeholder="Note de traitement (rempli automatiquement par Cursor)..." style="min-height:64px;border-color:rgba(108,99,255,0.3)"></textarea>
+        <div style="display:flex;justify-content:flex-end;margin-top:6px">
+          <button class="btn" type="button" onclick="saveRetour()"><i class="ti ti-device-floppy"></i>Enregistrer la note</button>
+        </div>
+      </div>
       <div class="form-row">
         <div class="form-group">
           <div class="form-label"><i class="ti ti-list"></i>Statut</div>
@@ -830,6 +837,7 @@ function render(){
       const openHtml=task.date_open?`<span class="meta-item"><i class="ti ti-calendar"></i>${new Date(task.date_open).toLocaleDateString('fr-FR',{day:'2-digit',month:'short'})}</span>`:'';
       const assigneeHtml=task.assignee?`<span class="meta-item"><i class="ti ti-user"></i>${esc(task.assignee)}</span>`:'';
       const versionHtml=task.version?`<span class="version-badge">v${esc(task.version)}</span>`:'';
+      const retourHtml=task.retour_cursor?`<div style="font-size:11px;color:var(--accent2);margin-top:8px;background:var(--accent-glow);border:1px solid rgba(108,99,255,0.25);border-radius:6px;padding:5px 8px;line-height:1.4;display:flex;gap:5px;align-items:flex-start"><i class="ti ti-robot" style="margin-top:1px;flex-shrink:0"></i><span style="display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden">${esc(task.retour_cursor)}</span></div>`:'';
       const card=document.createElement('div');
       card.className=`card priority-${prio}`;
       card.draggable=true;
@@ -846,6 +854,7 @@ function render(){
         <div class="card-title">${esc(task.title)}</div>
         ${task.description?`<div style="font-size:12px;color:var(--text3);margin-bottom:8px;line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">${esc(task.description)}</div>`:''}
         <div class="card-meta">${openHtml}${dueHtml}${assigneeHtml}</div>
+        ${retourHtml}
         ${(versionHtml)?`<div class="card-bottom"><span>${versionHtml}</span><span style="font-size:11px;color:var(--text3)">${task.status==='Terminé'?'✅':''}</span></div>`:''}
       `;
       card.addEventListener('dragstart',e=>{dragId=task.id;card.classList.add('dragging');e.dataTransfer.setData('text/plain',String(task.id));e.dataTransfer.effectAllowed='move';});
@@ -929,6 +938,8 @@ function openAddTask(status){
   document.getElementById('taskAssignee').value='';
   document.getElementById('taskDateOpen').value=new Date().toISOString().split('T')[0];
   document.getElementById('taskDateClose').value='';
+  document.getElementById('taskRetour').value='';
+  document.getElementById('retourCursorGroup').style.display='none';
   document.querySelectorAll('.tag-toggle').forEach(el=>{el.className='tag-toggle';el.dataset.active='false'});
   document.getElementById('cardModal').style.display='flex';
   setTimeout(()=>document.getElementById('taskTitle').focus(),100);
@@ -947,6 +958,8 @@ function openEditTask(id){
   document.getElementById('taskAssignee').value=task.assignee||'';
   document.getElementById('taskDateOpen').value=task.date_open||'';
   document.getElementById('taskDateClose').value=task.date_close||'';
+  document.getElementById('taskRetour').value=task.retour_cursor||'';
+  document.getElementById('retourCursorGroup').style.display='block';
   document.querySelectorAll('.tag-toggle').forEach(el=>{
     const cat=el.dataset.cat;
     const isActive=selectedTags.includes(cat);
@@ -984,6 +997,16 @@ async function deleteTask(id){
   tasks=tasks.filter(t=>String(t.id)!==String(id));render();
   await sb.from('tasks').delete().eq('id',id);
   showToast('Carte supprimée','info');
+}
+// Enregistre uniquement le champ "Retour Cursor" (n'affecte pas le reste de la carte)
+async function saveRetour(){
+  if(!editingId){showToast('Enregistrez d\'abord la carte','info');return;}
+  const note=document.getElementById('taskRetour').value;
+  const{error}=await sb.from('tasks').update({retour_cursor:note}).eq('id',editingId);
+  if(error){showToast('Colonne retour_cursor manquante ? Lancez le SQL.','error');return;}
+  tasks=tasks.map(t=>String(t.id)===String(editingId)?{...t,retour_cursor:note}:t);
+  render();
+  showToast('Retour Cursor enregistré','success');
 }
 
 /* ===================== IMPORT / EXPORT JSON ===================== */

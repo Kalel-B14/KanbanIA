@@ -198,7 +198,14 @@ select.filter-select option{background:var(--bg2)}
 .chg .old{color:var(--text3);text-decoration:line-through}
 .chg .new{color:var(--green);font-weight:500}
 .diff-empty{font-size:12px;color:var(--text3);padding:8px 2px;font-style:italic}
-.diff-check{margin-right:8px;accent-color:var(--accent);width:15px;height:15px;cursor:pointer}
+.diff-check{margin-right:8px;accent-color:var(--accent);width:15px;height:15px;cursor:pointer;flex-shrink:0}
+.diff-head{justify-content:flex-start;flex-wrap:wrap}
+.sel-all{margin-left:auto;display:inline-flex;align-items:center;gap:6px;font-size:11px;color:var(--text3);cursor:pointer;text-transform:none;font-weight:500;letter-spacing:0}
+.sel-all input{accent-color:var(--accent);width:14px;height:14px;cursor:pointer}
+.val-toolbar{display:flex;align-items:center;gap:10px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 14px;margin-bottom:16px}
+.val-toolbar label{display:inline-flex;align-items:center;gap:8px;font-size:13px;color:var(--text);cursor:pointer;font-weight:500}
+.val-toolbar input{accent-color:var(--accent);width:16px;height:16px;cursor:pointer}
+.dup-hint{margin-left:auto;font-size:10px;color:var(--text3);font-weight:400;text-transform:none;letter-spacing:0}
 /* History list */
 .hist-item{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:8px;cursor:pointer;transition:all var(--transition)}
 .hist-item:hover{border-color:var(--border2);background:var(--surface2)}
@@ -1275,12 +1282,19 @@ function normalizePlan(r){
 }
 
 /* ===================== VALIDATION ===================== */
+function selAll(type,count,withChecks){
+  return (withChecks&&count>0)?`<label class="sel-all"><input type="checkbox" class="sel-all-box" data-group="${type}" checked onchange="toggleGroup('${type}',this.checked)">Tout</label>`:'';
+}
 function planToHtml(plan,withChecks){
   const newCards=plan.new_cards||[],dups=plan.duplicates||[],upds=plan.existing_updates||[];
   let html='';
+  if(withChecks){
+    const totalChoices=newCards.length+dups.length+upds.length;
+    if(totalChoices>0)html+=`<div class="val-toolbar"><label><input type="checkbox" id="masterCheck" checked onchange="toggleAllChecks(this.checked)"><i class="ti ti-checks"></i>Tout cocher / décocher</label></div>`;
+  }
   if(plan.summary)html+=`<div class="ai-panel"><div class="ai-panel-title"><i class="ti ti-robot"></i>Synthèse de l'IA</div><div class="ai-result">${esc(plan.summary)}</div></div>`;
 
-  html+=`<div class="diff-section"><div class="diff-head new"><i class="ti ti-plus"></i>Nouvelles cartes<span class="badge">${newCards.length}</span></div>`;
+  html+=`<div class="diff-section"><div class="diff-head new"><i class="ti ti-plus"></i>Nouvelles cartes<span class="badge">${newCards.length}</span>${selAll('new',newCards.length,withChecks)}</div>`;
   if(newCards.length===0)html+='<div class="diff-empty">Aucune nouvelle carte proposée.</div>';
   newCards.forEach((c,i)=>{
     html+=`<div class="diff-item">
@@ -1297,18 +1311,18 @@ function planToHtml(plan,withChecks){
   });
   html+='</div>';
 
-  html+=`<div class="diff-section"><div class="diff-head dup"><i class="ti ti-copy"></i>Doublons ignorés<span class="badge">${dups.length}</span></div>`;
+  html+=`<div class="diff-section"><div class="diff-head dup"><i class="ti ti-copy"></i>Doublons<span class="badge">${dups.length}</span>${withChecks&&dups.length>0?'<span class="dup-hint">coché = ignoré · décochez pour créer la carte quand même</span>':''}${selAll('dup',dups.length,withChecks)}</div>`;
   if(dups.length===0)html+='<div class="diff-empty">Aucun doublon détecté.</div>';
-  dups.forEach(d=>{
+  dups.forEach((d,i)=>{
     html+=`<div class="diff-item dim">
-      <div class="diff-item-title"><i class="ti ti-arrow-back-up" style="color:var(--text3)"></i>${esc(d.note||'(note)')}</div>
+      <div class="diff-item-title">${withChecks?`<input type="checkbox" class="diff-check" data-type="dup" data-i="${i}" checked>`:''}<i class="ti ti-arrow-back-up" style="color:var(--text3)"></i>${esc(d.note||'(note)')}</div>
       <div style="font-size:12px;color:var(--text2)">↳ déjà présent : <strong>${esc(d.existing_title)}</strong></div>
       ${d.reason?`<div class="diff-reason"><i class="ti ti-bulb"></i>${esc(d.reason)}</div>`:''}
     </div>`;
   });
   html+='</div>';
 
-  html+=`<div class="diff-section"><div class="diff-head upd"><i class="ti ti-adjustments"></i>Réajustements proposés<span class="badge">${upds.length}</span></div>`;
+  html+=`<div class="diff-section"><div class="diff-head upd"><i class="ti ti-adjustments"></i>Réajustements proposés<span class="badge">${upds.length}</span>${selAll('upd',upds.length,withChecks)}</div>`;
   if(upds.length===0)html+='<div class="diff-empty">Aucun réajustement proposé.</div>';
   upds.forEach((u,i)=>{
     let chips='';
@@ -1337,6 +1351,30 @@ function openValidation(){
   document.getElementById('validationModal').style.display='flex';
 }
 
+function toggleGroup(type,checked){
+  document.querySelectorAll(`.diff-check[data-type="${type}"]`).forEach(c=>c.checked=checked);
+  syncMaster();
+}
+function toggleAllChecks(checked){
+  document.querySelectorAll('.diff-check').forEach(c=>c.checked=checked);
+  document.querySelectorAll('.sel-all-box').forEach(c=>c.checked=checked);
+}
+function syncMaster(){
+  // met à jour les cases "Tout" de section + le master global
+  ['new','dup','upd'].forEach(type=>{
+    const boxes=[...document.querySelectorAll(`.diff-check[data-type="${type}"]`)];
+    const grp=document.querySelector(`.sel-all-box[data-group="${type}"]`);
+    if(grp&&boxes.length)grp.checked=boxes.every(b=>b.checked);
+  });
+  const all=[...document.querySelectorAll('.diff-check')];
+  const master=document.getElementById('masterCheck');
+  if(master&&all.length)master.checked=all.every(b=>b.checked);
+}
+// synchronise les cases "Tout" quand on coche/décoche une case individuelle
+document.addEventListener('change',e=>{
+  if(e.target.classList&&e.target.classList.contains('diff-check')&&e.target.dataset.type)syncMaster();
+});
+
 async function applyAiPlan(){
   if(!aiPlan)return;
   const btn=document.getElementById('applyBtn');
@@ -1344,19 +1382,38 @@ async function applyAiPlan(){
   // sélection via cases à cocher
   const checkedNew=[...document.querySelectorAll('.diff-check[data-type="new"]:checked')].map(c=>Number(c.dataset.i));
   const checkedUpd=[...document.querySelectorAll('.diff-check[data-type="upd"]:checked')].map(c=>Number(c.dataset.i));
+  // doublons DÉCOCHÉS = l'utilisateur veut quand même créer la carte
+  const uncheckedDup=[...document.querySelectorAll('.diff-check[data-type="dup"]:not(:checked)')].map(c=>Number(c.dataset.i));
+  const totalDup=(aiPlan.duplicates||[]).length;
+  const ignoredDupCount=totalDup-uncheckedDup.length;
 
   let createdCount=0,updatedCount=0;
+  const today=new Date().toISOString().split('T')[0];
 
-  // 1) Création des nouvelles cartes
+  // 1) Cartes à créer : nouvelles cartes cochées + doublons décochés
   const toInsert=checkedNew.map(i=>{
     const c=aiPlan.new_cards[i];
     return{
       title:c.title,description:c.description,
       status:c.status,priority:Number(c.priority)||2,
       category:normCat(c.category),version:c.version||DEFAULT_VERSION,
-      assignee:'',date_open:new Date().toISOString().split('T')[0],date_close:null,
+      assignee:'',date_open:today,date_close:null,
       project_id:currentProjectId
     };
+  });
+  uncheckedDup.forEach(i=>{
+    const d=aiPlan.duplicates[i];if(!d)return;
+    const ex=tasks.find(t=>String(t.id)===String(d.existing_id));
+    toInsert.push({
+      title:d.note||d.existing_title||(ex&&ex.title)||'Sans titre',
+      description:'',
+      status:'En attente',
+      priority:ex?prioToInt(ex.priority):2,
+      category:ex?normCat(ex.category||ex.categories):'autre',
+      version:DEFAULT_VERSION,
+      assignee:'',date_open:today,date_close:null,
+      project_id:currentProjectId
+    });
   });
   if(toInsert.length){
     const{data,error}=await sb.from('tasks').insert(toInsert).select();
@@ -1382,7 +1439,7 @@ async function applyAiPlan(){
     raw_notes:aiRawNotes,
     summary:aiPlan.summary||'',
     new_count:createdCount,
-    duplicate_count:(aiPlan.duplicates||[]).length,
+    duplicate_count:ignoredDupCount,
     update_count:updatedCount,
     report:aiPlan
   }]);

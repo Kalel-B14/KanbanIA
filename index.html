@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Board MegaTv</title>
+<title>Board MegaTv — Kanban IA</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
@@ -39,9 +39,31 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .btn:active{transform:translateY(0)}
 .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
 .btn.primary:hover{background:var(--accent2);border-color:var(--accent2)}
+.btn.ghost{background:none}
+.btn.danger{color:var(--red);border-color:rgba(255,77,106,0.3)}
+.btn.danger:hover{background:var(--red-bg)}
 .btn i{font-size:15px}
+.btn:disabled{opacity:0.5;cursor:not-allowed;transform:none}
 .btn-icon{width:34px;height:34px;border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;border:1px solid var(--border2);background:var(--surface);color:var(--text2);cursor:pointer;transition:all var(--transition);font-size:16px;}
 .btn-icon:hover{background:var(--surface2);color:var(--text);transform:translateY(-1px)}
+/* Project selector */
+.project-switch{position:relative}
+.project-btn{display:inline-flex;align-items:center;gap:8px;padding:6px 12px;border-radius:var(--radius-sm);border:1px solid var(--border2);background:var(--surface);color:var(--text);font-size:13px;font-weight:500;cursor:pointer;transition:all var(--transition);}
+.project-btn:hover{background:var(--surface2)}
+.project-btn .ti-chevron-down{font-size:14px;color:var(--text3)}
+.project-menu{position:absolute;top:calc(100% + 6px);left:0;min-width:240px;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--radius-sm);box-shadow:0 12px 40px rgba(0,0,0,0.5);padding:6px;z-index:1500;display:none;}
+.project-menu.open{display:block;animation:fadeIn 0.15s ease}
+.project-menu-item{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 10px;border-radius:6px;cursor:pointer;font-size:13px;color:var(--text2);transition:all 0.15s;}
+.project-menu-item:hover{background:var(--surface)}
+.project-menu-item.active{background:var(--accent-glow);color:var(--accent2)}
+.project-menu-item .pm-actions{display:flex;gap:2px;opacity:0;transition:opacity 0.15s}
+.project-menu-item:hover .pm-actions{opacity:1}
+.pm-action{width:24px;height:24px;border-radius:5px;display:flex;align-items:center;justify-content:center;background:none;border:none;color:var(--text3);cursor:pointer;font-size:13px}
+.pm-action:hover{background:var(--surface2);color:var(--text)}
+.pm-action.del:hover{color:var(--red)}
+.project-menu-sep{height:1px;background:var(--border);margin:6px 4px}
+.project-menu-add{display:flex;align-items:center;gap:6px;padding:8px 10px;border-radius:6px;cursor:pointer;font-size:13px;color:var(--accent2);transition:all 0.15s}
+.project-menu-add:hover{background:var(--accent-glow)}
 .stats-bar{position:fixed;top:56px;left:0;right:0;height:48px;background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 20px;gap:24px;z-index:999;overflow-x:auto;}
 .stats-bar::-webkit-scrollbar{height:0}
 .stat-item{display:flex;align-items:center;gap:6px;white-space:nowrap;flex-shrink:0}
@@ -120,9 +142,10 @@ select.filter-select option{background:var(--bg2)}
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:2000;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px);animation:fadeIn 0.2s ease;}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
 .modal{background:var(--bg2);border:1px solid var(--border2);border-radius:16px;width:560px;max-width:90vw;max-height:90vh;overflow-y:auto;animation:modalIn 0.25s cubic-bezier(0.34,1.56,0.64,1);scrollbar-width:thin;}
+.modal.wide{width:720px}
 @keyframes modalIn{from{opacity:0;transform:scale(0.92) translateY(-20px)}to{opacity:1;transform:none}}
 .modal-header{padding:20px 24px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--bg2);z-index:1;}
-.modal-title{font-family:'Syne',sans-serif;font-weight:700;font-size:18px}
+.modal-title{font-family:'Syne',sans-serif;font-weight:700;font-size:18px;display:flex;align-items:center;gap:8px}
 .modal-body{padding:20px 24px}
 .modal-footer{padding:16px 24px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end;position:sticky;bottom:0;background:var(--bg2);}
 .form-group{margin-bottom:16px}
@@ -132,8 +155,11 @@ select.filter-select option{background:var(--bg2)}
 .form-input:focus,.form-textarea:focus,.form-select:focus{border-color:var(--accent)}
 .form-input::placeholder,.form-textarea::placeholder{color:var(--text3)}
 .form-textarea{resize:vertical;min-height:80px}
+.form-textarea.big{min-height:200px;font-size:14px;line-height:1.6}
 .form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .form-select option{background:var(--bg2)}
+.form-hint{font-size:11px;color:var(--text3);margin-top:6px;line-height:1.5}
+.form-hint a{color:var(--accent2)}
 .tags-grid{display:flex;flex-wrap:wrap;gap:6px}
 .tag-toggle{padding:4px 12px;border-radius:20px;border:1px solid var(--border2);background:var(--surface);color:var(--text2);font-size:12px;cursor:pointer;transition:all var(--transition);}
 .tag-toggle:hover{background:var(--surface2)}
@@ -155,6 +181,32 @@ select.filter-select option{background:var(--bg2)}
 @keyframes bounce{0%,80%,100%{transform:scale(0.6);opacity:0.4}40%{transform:scale(1);opacity:1}}
 .ai-result{font-size:13px;line-height:1.6;color:var(--text2)}
 .ai-result strong{color:var(--text);font-weight:500}
+/* Diff / validation sections */
+.diff-section{margin-bottom:18px}
+.diff-head{display:flex;align-items:center;gap:8px;font-family:'Syne',sans-serif;font-size:13px;font-weight:600;margin-bottom:10px;}
+.diff-head .badge{font-size:11px;border-radius:20px;padding:1px 8px;font-weight:600}
+.diff-head.new{color:var(--green)}.diff-head.new .badge{background:var(--green-bg)}
+.diff-head.dup{color:var(--text2)}.diff-head.dup .badge{background:var(--surface2)}
+.diff-head.upd{color:var(--orange)}.diff-head.upd .badge{background:var(--orange-bg)}
+.diff-item{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:8px;}
+.diff-item.dim{opacity:0.65}
+.diff-item-title{font-size:13px;color:var(--text);font-weight:500;margin-bottom:6px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.diff-reason{font-size:12px;color:var(--text3);line-height:1.5;display:flex;align-items:flex-start;gap:5px;margin-top:6px}
+.diff-reason i{color:var(--accent2);font-size:13px;margin-top:1px}
+.chg{display:inline-flex;align-items:center;gap:5px;font-size:11px;background:var(--bg);border:1px solid var(--border2);border-radius:6px;padding:2px 8px;color:var(--text2);margin-right:6px;margin-top:4px}
+.chg .arrow{color:var(--text3)}
+.chg .old{color:var(--text3);text-decoration:line-through}
+.chg .new{color:var(--green);font-weight:500}
+.diff-empty{font-size:12px;color:var(--text3);padding:8px 2px;font-style:italic}
+.diff-check{margin-right:8px;accent-color:var(--accent);width:15px;height:15px;cursor:pointer}
+/* History list */
+.hist-item{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:8px;cursor:pointer;transition:all var(--transition)}
+.hist-item:hover{border-color:var(--border2);background:var(--surface2)}
+.hist-top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px}
+.hist-date{font-size:12px;color:var(--text2);display:flex;align-items:center;gap:6px}
+.hist-counts{display:flex;gap:6px}
+.hist-counts span{font-size:11px;border-radius:20px;padding:1px 8px}
+.hist-summary{font-size:12px;color:var(--text3);line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .toast{position:fixed;bottom:24px;right:24px;z-index:9999;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--radius-sm);padding:12px 16px;display:flex;align-items:center;gap:10px;min-width:260px;font-size:13px;animation:toastIn 0.3s ease;box-shadow:0 8px 32px rgba(0,0,0,0.4);}
 @keyframes toastIn{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
 .toast.success .ti{color:var(--green)}.toast.error .ti{color:var(--red)}.toast.info .ti{color:var(--accent2)}
@@ -167,11 +219,6 @@ select.filter-select option{background:var(--bg2)}
 input[type=date]{color-scheme:dark}
 ::-webkit-scrollbar{width:6px;height:6px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
 .json-preview{background:var(--bg);border:1px solid var(--border2);border-radius:var(--radius-sm);padding:12px;font-family:monospace;font-size:11px;color:var(--text2);max-height:160px;overflow-y:auto;white-space:pre-wrap;word-break:break-all;}
-/* Import progress */
-.import-progress{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 16px;margin-bottom:12px;display:none;}
-.import-bar-wrap{height:6px;background:var(--border);border-radius:3px;overflow:hidden;margin-top:8px;}
-.import-bar-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--green));border-radius:3px;transition:width 0.3s ease;width:0%;}
-.import-label{font-size:12px;color:var(--text2);display:flex;justify-content:space-between;}
 </style>
 </head>
 <body>
@@ -183,19 +230,23 @@ input[type=date]{color-scheme:dark}
 
 <div class="header">
   <div class="header-logo">
-    <div class="logo-badge">M</div>
-    <div>
-      <span class="logo-title">Board MegaTv</span>
-      <span class="logo-sub">Kanban IA</span>
+    <div class="logo-badge" id="logoBadge">M</div>
+    <div class="project-switch">
+      <button class="project-btn" onclick="toggleProjectMenu(event)">
+        <span id="currentProjectName">MegaTv</span>
+        <i class="ti ti-chevron-down"></i>
+      </button>
+      <div class="project-menu" id="projectMenu"></div>
     </div>
   </div>
   <div class="header-actions">
     <button class="btn-icon" onclick="toggleFilters()" id="filterToggleBtn" title="Filtres"><i class="ti ti-filter"></i></button>
-    <button class="btn" onclick="openAiPanel()"><i class="ti ti-sparkles"></i>Analyser avec IA</button>
-    <button class="btn" onclick="exportJSON()"><i class="ti ti-download"></i>Export JSON</button>
-    <button class="btn" onclick="document.getElementById('importFile').click()"><i class="ti ti-upload"></i>Import</button>
+    <button class="btn-icon" onclick="openSettings()" title="Réglages IA"><i class="ti ti-settings"></i></button>
+    <button class="btn" onclick="openHistory()"><i class="ti ti-history"></i>Historique</button>
+    <button class="btn" onclick="openExport()" title="Export / Import JSON"><i class="ti ti-file-export"></i>JSON</button>
     <input type="file" id="importFile" style="display:none" accept=".json" onchange="importJSON(event)">
-    <button class="btn primary" onclick="openAddTask(null)"><i class="ti ti-plus"></i>Nouvelle carte</button>
+    <button class="btn primary" onclick="openNotes()"><i class="ti ti-sparkles"></i>Notes IA</button>
+    <button class="btn primary" onclick="openAddTask(null)"><i class="ti ti-plus"></i>Carte</button>
   </div>
 </div>
 
@@ -314,7 +365,7 @@ input[type=date]{color-scheme:dark}
       <div class="form-row">
         <div class="form-group">
           <div class="form-label"><i class="ti ti-code"></i>Version</div>
-          <input class="form-input" id="taskVersion" type="text" placeholder="1.0.0">
+          <input class="form-input" id="taskVersion" type="text" placeholder="1.9.99">
         </div>
         <div class="form-group">
           <div class="form-label"><i class="ti ti-user"></i>Assigné à</div>
@@ -329,32 +380,134 @@ input[type=date]{color-scheme:dark}
   </div>
 </div>
 
-<!-- AI MODAL -->
-<div class="modal-overlay" id="aiModal" style="display:none">
+<!-- NOTES IA MODAL -->
+<div class="modal-overlay" id="notesModal" style="display:none">
   <div class="modal">
     <div class="modal-header">
-      <div class="modal-title" style="display:flex;align-items:center;gap:8px"><i class="ti ti-sparkles" style="color:var(--accent)"></i>Analyse IA du Board</div>
-      <button class="btn-icon" onclick="document.getElementById('aiModal').style.display='none'"><i class="ti ti-x"></i></button>
+      <div class="modal-title"><i class="ti ti-sparkles" style="color:var(--accent)"></i>Notes brutes → IA</div>
+      <button class="btn-icon" onclick="document.getElementById('notesModal').style.display='none'"><i class="ti ti-x"></i></button>
     </div>
     <div class="modal-body">
-      <div class="ai-panel">
-        <div class="ai-panel-title"><i class="ti ti-robot"></i>Assistant IA<span class="ai-tag"><i class="ti ti-sparkles"></i>Claude Sonnet</span></div>
-        <div id="aiStatus" class="ai-thinking" style="display:none"><div class="dot-anim"><span></span><span></span><span></span></div><span>Analyse en cours...</span></div>
-        <div id="aiResult" class="ai-result" style="display:none"></div>
-        <div id="aiInitial" style="font-size:13px;color:var(--text3)">L'IA va analyser toutes vos cartes et vous proposer :<br>• Une priorisation intelligente<br>• Un classement par criticité<br>• Des recommandations d'ordre de traitement<br>• Un fichier JSON optimisé pour l'import</div>
+      <div class="ai-panel" style="margin-bottom:14px">
+        <div class="ai-panel-title"><i class="ti ti-robot"></i>Comment ça marche<span class="ai-tag" id="providerTag"><i class="ti ti-sparkles"></i>Gemini</span></div>
+        <div style="font-size:13px;color:var(--text3);line-height:1.6">Collez vos notes vocales / idées en vrac. L'IA récupère <strong style="color:var(--text2)">l'état actuel du board</strong>, puis propose : des cartes nettoyées et catégorisées, la détection des doublons, et des réajustements de priorité/statut. <strong style="color:var(--text2)">Rien n'est appliqué sans votre validation.</strong></div>
       </div>
-      <div id="aiJsonWrap" style="display:none">
-        <div class="form-label" style="margin-bottom:8px"><i class="ti ti-code"></i>JSON généré</div>
-        <div class="json-preview" id="aiJsonOutput"></div>
-        <div style="display:flex;gap:8px;margin-top:10px">
-          <button class="btn" onclick="copyAiJson()"><i class="ti ti-copy"></i>Copier</button>
-          <button class="btn primary" onclick="importAiJson()"><i class="ti ti-upload"></i>Appliquer au board</button>
-        </div>
+      <div class="form-group">
+        <div class="form-label"><i class="ti ti-microphone"></i>Vos notes brutes</div>
+        <textarea class="form-textarea big" id="rawNotes" placeholder="Ex : alors faut absolument corriger le bug du player qui freeze sur la page details, c'est urgent... aussi penser à refaire le design de la sidebar c'est moche... et ajouter un mode sombre ce serait cool mais pas prioritaire..."></textarea>
+      </div>
+      <div id="notesThinking" class="ai-thinking" style="display:none"><div class="dot-anim"><span></span><span></span><span></span></div><span>L'IA analyse vos notes et le board...</span></div>
+      <div id="notesError" style="display:none;color:var(--red);font-size:13px;line-height:1.5"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="document.getElementById('notesModal').style.display='none'">Fermer</button>
+      <button class="btn primary" id="analyzeBtn" onclick="analyzeNotes()"><i class="ti ti-sparkles"></i>Analyser par l'IA et Importer</button>
+    </div>
+  </div>
+</div>
+
+<!-- VALIDATION MODAL -->
+<div class="modal-overlay" id="validationModal" style="display:none">
+  <div class="modal wide">
+    <div class="modal-header">
+      <div class="modal-title"><i class="ti ti-checklist" style="color:var(--green)"></i>Validation de l'analyse IA</div>
+      <button class="btn-icon" onclick="document.getElementById('validationModal').style.display='none'"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="modal-body" id="validationBody"></div>
+    <div class="modal-footer">
+      <button class="btn danger" onclick="document.getElementById('validationModal').style.display='none'"><i class="ti ti-x"></i>Annuler</button>
+      <button class="btn primary" id="applyBtn" onclick="applyAiPlan()"><i class="ti ti-check"></i>Valider et appliquer</button>
+    </div>
+  </div>
+</div>
+
+<!-- HISTORY MODAL -->
+<div class="modal-overlay" id="historyModal" style="display:none">
+  <div class="modal wide">
+    <div class="modal-header">
+      <div class="modal-title"><i class="ti ti-history" style="color:var(--accent)"></i>Historique des imports IA</div>
+      <button class="btn-icon" onclick="document.getElementById('historyModal').style.display='none'"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="modal-body" id="historyBody"></div>
+  </div>
+</div>
+
+<!-- HISTORY DETAIL MODAL -->
+<div class="modal-overlay" id="historyDetailModal" style="display:none">
+  <div class="modal wide">
+    <div class="modal-header">
+      <div class="modal-title"><i class="ti ti-file-search" style="color:var(--accent)"></i>Rapport d'analyse</div>
+      <button class="btn-icon" onclick="document.getElementById('historyDetailModal').style.display='none'"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="modal-body" id="historyDetailBody"></div>
+    <div class="modal-footer">
+      <button class="btn" onclick="document.getElementById('historyDetailModal').style.display='none'">Fermer</button>
+    </div>
+  </div>
+</div>
+
+<!-- EXPORT / IMPORT MODAL -->
+<div class="modal-overlay" id="exportModal" style="display:none">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title"><i class="ti ti-file-export" style="color:var(--accent)"></i>Export / Import JSON</div>
+      <button class="btn-icon" onclick="document.getElementById('exportModal').style.display='none'"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="modal-body">
+      <div style="font-size:13px;color:var(--text3);line-height:1.6;margin-bottom:16px">Sauvegarde / restauration manuelle des cartes du projet courant.</div>
+      <div style="display:flex;gap:8px">
+        <button class="btn" onclick="exportJSON()"><i class="ti ti-download"></i>Exporter le board</button>
+        <button class="btn" onclick="document.getElementById('importFile').click()"><i class="ti ti-upload"></i>Importer un JSON</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SETTINGS MODAL -->
+<div class="modal-overlay" id="settingsModal" style="display:none">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title"><i class="ti ti-settings" style="color:var(--accent)"></i>Réglages IA</div>
+      <button class="btn-icon" onclick="document.getElementById('settingsModal').style.display='none'"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <div class="form-label"><i class="ti ti-cpu"></i>Fournisseur IA</div>
+        <select class="form-select" id="aiProvider" onchange="onProviderChange()">
+          <option value="gemini">Google Gemini (gratuit)</option>
+          <option value="anthropic">Anthropic Claude</option>
+        </select>
+        <div class="form-hint" id="providerHint"></div>
+      </div>
+      <div class="form-group">
+        <div class="form-label"><i class="ti ti-key"></i>Clé API</div>
+        <input class="form-input" id="aiKey" type="password" placeholder="Collez votre clé API ici">
+        <div class="form-hint">La clé est stockée uniquement dans votre navigateur (localStorage).</div>
       </div>
     </div>
     <div class="modal-footer">
-      <button class="btn" onclick="document.getElementById('aiModal').style.display='none'">Fermer</button>
-      <button class="btn primary" id="aiAnalyzeBtn" onclick="runAiAnalysis()"><i class="ti ti-sparkles"></i>Lancer l'analyse</button>
+      <button class="btn" onclick="document.getElementById('settingsModal').style.display='none'">Annuler</button>
+      <button class="btn primary" onclick="saveSettings()"><i class="ti ti-check"></i>Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- PROJECT MODAL -->
+<div class="modal-overlay" id="projectModal" style="display:none">
+  <div class="modal" style="width:420px">
+    <div class="modal-header">
+      <div class="modal-title" id="projectModalTitle"><i class="ti ti-folder-plus" style="color:var(--accent)"></i>Nouveau projet</div>
+      <button class="btn-icon" onclick="document.getElementById('projectModal').style.display='none'"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group" style="margin-bottom:0">
+        <div class="form-label"><i class="ti ti-folder"></i>Nom du projet</div>
+        <input class="form-input" id="projectNameInput" type="text" placeholder="Ex : MegaTv, Site Web, App Mobile...">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="document.getElementById('projectModal').style.display='none'">Annuler</button>
+      <button class="btn primary" onclick="saveProject()"><i class="ti ti-check"></i>Enregistrer</button>
     </div>
   </div>
 </div>
@@ -365,12 +518,16 @@ const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSI
 const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 
 let tasks=[];
+let projects=[];
+let currentProjectId=null;
 let editingId=null;
 let selectedTags=[];
 let activeCatFilter='all';
 let filterVisible=true;
-let aiJsonData=null;
 let dragId=null;
+let aiPlan=null;          // résultat IA en attente de validation
+let aiRawNotes='';        // notes brutes associées
+let editingProjectId=null;
 
 const COLUMNS=[
   {id:'Backlog',shortLabel:'Backlog',dot:'#555970'},
@@ -380,12 +537,14 @@ const COLUMNS=[
   {id:'Terminé',shortLabel:'Terminé',dot:'#06d6a0'},
   {id:'Bloqué',shortLabel:'Bloqué',dot:'#ff4d6a'},
 ];
+const VALID_STATUS=['En attente','En cours de développement','En cours de vérification','Terminé','Bloqué','Backlog'];
 const PRIORITY_ORDER={critical:0,high:1,medium:2,low:3};
 const PRIORITY_ICONS={critical:'🔴',high:'🟠',medium:'🟡',low:'🔵'};
 const PRIORITY_LABELS={critical:'Critique',high:'Haute',medium:'Moyenne',low:'Basse'};
 const PB_CLASS={critical:'pb-critical',high:'pb-high',medium:'pb-medium',low:'pb-low'};
+const DEFAULT_VERSION='1.9.99';
 
-// Normalise une catégorie brute vers la clé interne
+/* ===================== NORMALISATION ===================== */
 function normCat(raw){
   if(!raw)return'autre';
   const s=raw.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
@@ -393,37 +552,145 @@ function normCat(raw){
   if(s==='ui')return'ui';
   if(s==='ux')return'ux';
   if(s.includes('ajout')||s.includes('feature'))return'ajout';
-  if(s.includes('amelioration')||s.includes('amélioration'))return'amelioration';
+  if(s.includes('amelioration'))return'amelioration';
   if(s.includes('perf'))return'performance';
   if(s.includes('design'))return'design';
   return'autre';
 }
-
-// Normalise une priorité brute (nombre ou texte) vers la clé interne
 function normPrio(raw){
-  if(!raw)return'medium';
-  if(typeof raw==='number'){const m={1:'critical',2:'high',3:'medium',4:'low'};return m[raw]||'medium';}
-  const s=String(raw).toLowerCase();
-  if(s==='critical'||s==='critique')return'critical';
-  if(s==='high'||s==='haute')return'high';
-  if(s==='low'||s==='basse')return'low';
+  if(raw===0||raw)
+  {
+    if(typeof raw==='number'){const m={1:'critical',2:'high',3:'medium',4:'low'};return m[raw]||'medium';}
+    const s=String(raw).toLowerCase().trim();
+    if(s==='1'||s==='critical'||s==='critique'||s.includes('urgent')||s.includes('bloqu'))return'critical';
+    if(s==='2'||s==='high'||s==='haute'||s.includes('important'))return'high';
+    if(s==='4'||s==='low'||s==='basse'||s.includes('souhait'))return'low';
+    if(s==='3'||s==='medium'||s==='moyenne')return'medium';
+  }
   return'medium';
 }
+// priorité interne -> entier stocké en base (1=Urgent,2=Important,3=Souhaitable,4=Faible)
+function prioToInt(p){const m={critical:1,high:2,medium:3,low:4};return m[normPrio(p)]||3;}
+function intPrioLabel(p){const m={1:'Urgent / Bloquant',2:'Important',3:'Souhaitable',4:'Faible'};return m[Number(p)]||'Important';}
+
+function catLabel(c){
+  const m={bug:'🐞 Bug',ui:'🎨 UI',ux:'✨ UX',ajout:'➕ Ajout',amelioration:'🔧 Amélio',performance:'⚡ Perf',design:'💄 Design',autre:'📦 Autre'};
+  return m[c]||c;
+}
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 
 function sanitizeTask(t){
   return{
     title:t.title||'Sans titre',
     description:t.description||'',
-    status:t.status||'En attente',
-    priority:normPrio(t.priority),
-    categories:normCat(t.categories||t.category),
-    version:t.version||'1.0.0',
+    status:VALID_STATUS.includes(t.status)?t.status:'En attente',
+    priority:prioToInt(t.priority),
+    category:normCat(t.category||t.categories),
+    version:t.version||DEFAULT_VERSION,
     assignee:t.assignee||'',
     date_open:t.date_open||null,
     date_close:t.date_close||null,
+    project_id:currentProjectId,
   };
 }
 
+/* ===================== PROJETS ===================== */
+function toggleProjectMenu(e){
+  e.stopPropagation();
+  document.getElementById('projectMenu').classList.toggle('open');
+}
+document.addEventListener('click',()=>document.getElementById('projectMenu').classList.remove('open'));
+
+function renderProjectMenu(){
+  const menu=document.getElementById('projectMenu');
+  let html='';
+  projects.forEach(p=>{
+    html+=`<div class="project-menu-item ${p.id===currentProjectId?'active':''}" onclick="switchProject('${p.id}')">
+      <span style="display:flex;align-items:center;gap:8px"><i class="ti ti-${p.id===currentProjectId?'folder-open':'folder'}"></i>${esc(p.name)}</span>
+      <span class="pm-actions">
+        <button class="pm-action" onclick="event.stopPropagation();openRenameProject('${p.id}')" title="Renommer"><i class="ti ti-edit"></i></button>
+        <button class="pm-action del" onclick="event.stopPropagation();deleteProject('${p.id}')" title="Supprimer"><i class="ti ti-trash"></i></button>
+      </span>
+    </div>`;
+  });
+  html+=`<div class="project-menu-sep"></div><div class="project-menu-add" onclick="openNewProject()"><i class="ti ti-plus"></i>Nouveau projet</div>`;
+  menu.innerHTML=html;
+  const cur=projects.find(p=>p.id===currentProjectId);
+  document.getElementById('currentProjectName').textContent=cur?cur.name:'—';
+  document.getElementById('logoBadge').textContent=cur?cur.name.charAt(0).toUpperCase():'M';
+}
+
+async function loadProjects(){
+  const{data,error}=await sb.from('projects').select('*').order('created_at',{ascending:true});
+  if(error){console.error('loadProjects',error);showToast('Erreur chargement projets','error');return;}
+  projects=data||[];
+  if(projects.length===0){
+    const{data:ins}=await sb.from('projects').insert([{name:'MegaTv'}]).select();
+    projects=ins||[];
+    // rattacher les cartes existantes sans projet au projet par défaut
+    if(projects[0])await sb.from('tasks').update({project_id:projects[0].id}).is('project_id',null);
+  }
+  const saved=localStorage.getItem('megatv_project');
+  currentProjectId=(saved&&projects.find(p=>p.id===saved))?saved:projects[0].id;
+  renderProjectMenu();
+}
+
+async function switchProject(id){
+  if(id===currentProjectId){document.getElementById('projectMenu').classList.remove('open');return;}
+  currentProjectId=id;
+  localStorage.setItem('megatv_project',id);
+  document.getElementById('projectMenu').classList.remove('open');
+  renderProjectMenu();
+  await loadTasks();
+  showToast('Projet : '+(projects.find(p=>p.id===id)?.name||''),'info');
+}
+
+function openNewProject(){
+  editingProjectId=null;
+  document.getElementById('projectModalTitle').innerHTML='<i class="ti ti-folder-plus" style="color:var(--accent)"></i>Nouveau projet';
+  document.getElementById('projectNameInput').value='';
+  document.getElementById('projectMenu').classList.remove('open');
+  document.getElementById('projectModal').style.display='flex';
+  setTimeout(()=>document.getElementById('projectNameInput').focus(),100);
+}
+function openRenameProject(id){
+  const p=projects.find(x=>x.id===id);if(!p)return;
+  editingProjectId=id;
+  document.getElementById('projectModalTitle').innerHTML='<i class="ti ti-edit" style="color:var(--accent)"></i>Renommer le projet';
+  document.getElementById('projectNameInput').value=p.name;
+  document.getElementById('projectMenu').classList.remove('open');
+  document.getElementById('projectModal').style.display='flex';
+  setTimeout(()=>document.getElementById('projectNameInput').focus(),100);
+}
+async function saveProject(){
+  const name=document.getElementById('projectNameInput').value.trim();
+  if(!name){showToast('Le nom est requis','error');return;}
+  document.getElementById('projectModal').style.display='none';
+  if(editingProjectId){
+    await sb.from('projects').update({name}).eq('id',editingProjectId);
+    showToast('Projet renommé','success');
+  }else{
+    const{data:ins}=await sb.from('projects').insert([{name}]).select();
+    if(ins&&ins[0]){currentProjectId=ins[0].id;localStorage.setItem('megatv_project',currentProjectId);}
+    showToast('Projet créé','success');
+  }
+  await loadProjects();
+  await loadTasks();
+}
+async function deleteProject(id){
+  if(projects.length<=1){showToast('Impossible de supprimer le dernier projet','error');return;}
+  const p=projects.find(x=>x.id===id);
+  if(!confirm(`Supprimer le projet "${p?.name}" et TOUTES ses cartes ?`))return;
+  document.getElementById('projectMenu').classList.remove('open');
+  await sb.from('tasks').delete().eq('project_id',id);
+  await sb.from('projects').delete().eq('id',id);
+  if(currentProjectId===id){currentProjectId=null;}
+  await loadProjects();
+  await loadTasks();
+  showToast('Projet supprimé','info');
+}
+
+/* ===================== BOARD ===================== */
 function buildBoard(){
   const board=document.getElementById('board');
   board.innerHTML='';
@@ -462,8 +729,7 @@ function getFilteredTasks(){
   return tasks.filter(t=>{
     if(search&&!t.title?.toLowerCase().includes(search)&&!t.description?.toLowerCase().includes(search))return false;
     if(activeCatFilter!=='all'){
-      const cats=normCat(t.categories||t.category||'');
-      if(cats!==activeCatFilter)return false;
+      if(normCat(t.categories||t.category||'')!==activeCatFilter)return false;
     }
     if(prio!=='all'&&normPrio(t.priority)!==prio)return false;
     if(dateF!=='all'&&t.date_close){
@@ -506,8 +772,8 @@ function render(){
         else dueHtml=`<span class="meta-item ${isOverdue?'overdue':''}"><i class="ti ti-calendar-due"></i>${dueStr}${isOverdue?' ⚠':''}</span>`;
       }
       const openHtml=task.date_open?`<span class="meta-item"><i class="ti ti-calendar"></i>${new Date(task.date_open).toLocaleDateString('fr-FR',{day:'2-digit',month:'short'})}</span>`:'';
-      const assigneeHtml=task.assignee?`<span class="meta-item"><i class="ti ti-user"></i>${task.assignee}</span>`:'';
-      const versionHtml=task.version?`<span class="version-badge">v${task.version}</span>`:'';
+      const assigneeHtml=task.assignee?`<span class="meta-item"><i class="ti ti-user"></i>${esc(task.assignee)}</span>`:'';
+      const versionHtml=task.version?`<span class="version-badge">v${esc(task.version)}</span>`:'';
       const card=document.createElement('div');
       card.className=`card priority-${prio}`;
       card.draggable=true;
@@ -521,8 +787,8 @@ function render(){
           <div class="card-tags">${tagsHtml||'<span style="font-size:11px;color:var(--text3)">Sans catégorie</span>'}</div>
           <div class="priority-badge ${PB_CLASS[prio]}" title="${PRIORITY_LABELS[prio]}">${PRIORITY_ICONS[prio]}</div>
         </div>
-        <div class="card-title">${task.title}</div>
-        ${task.description?`<div style="font-size:12px;color:var(--text3);margin-bottom:8px;line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">${task.description}</div>`:''}
+        <div class="card-title">${esc(task.title)}</div>
+        ${task.description?`<div style="font-size:12px;color:var(--text3);margin-bottom:8px;line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">${esc(task.description)}</div>`:''}
         <div class="card-meta">${openHtml}${dueHtml}${assigneeHtml}</div>
         ${(versionHtml)?`<div class="card-bottom"><span>${versionHtml}</span><span style="font-size:11px;color:var(--text3)">${task.status==='Terminé'?'✅':''}</span></div>`:''}
       `;
@@ -535,11 +801,6 @@ function render(){
   });
   updateStats();
   updateFilterCounts();
-}
-
-function catLabel(c){
-  const m={bug:'🐞 Bug',ui:'🎨 UI',ux:'✨ UX',ajout:'➕ Ajout',amelioration:'🔧 Amélio',performance:'⚡ Perf',design:'💄 Design',autre:'📦 Autre'};
-  return m[c]||c;
 }
 
 async function handleDrop(e,newStatus){
@@ -577,8 +838,7 @@ function updateFilterCounts(){
   cats.forEach(cat=>{
     const el=document.getElementById('count-'+cat);
     if(!el)return;
-    const count=cat==='all'?tasks.length:tasks.filter(t=>normCat(t.categories||t.category||'')==cat).length;
-    el.textContent=count;
+    el.textContent=cat==='all'?tasks.length:tasks.filter(t=>normCat(t.categories||t.category||'')==cat).length;
   });
 }
 
@@ -601,7 +861,7 @@ function toggleFilters(){
   document.getElementById('filterToggleBtn').style.color=filterVisible?'var(--accent)':'';
 }
 
-/* MODAL */
+/* ===================== CARD MODAL ===================== */
 function openAddTask(status){
   editingId=null;selectedTags=[];
   document.getElementById('modalTitle').textContent='Nouvelle carte';
@@ -609,7 +869,7 @@ function openAddTask(status){
   document.getElementById('taskDesc').value='';
   document.getElementById('taskStatus').value=status||'En attente';
   document.getElementById('taskPriority').value='medium';
-  document.getElementById('taskVersion').value='1.0.0';
+  document.getElementById('taskVersion').value=DEFAULT_VERSION;
   document.getElementById('taskAssignee').value='';
   document.getElementById('taskDateOpen').value=new Date().toISOString().split('T')[0];
   document.getElementById('taskDateClose').value='';
@@ -627,7 +887,7 @@ function openEditTask(id){
   document.getElementById('taskDesc').value=task.description||'';
   document.getElementById('taskStatus').value=task.status||'En attente';
   document.getElementById('taskPriority').value=normPrio(task.priority);
-  document.getElementById('taskVersion').value=task.version||'1.0.0';
+  document.getElementById('taskVersion').value=task.version||DEFAULT_VERSION;
   document.getElementById('taskAssignee').value=task.assignee||'';
   document.getElementById('taskDateOpen').value=task.date_open||'';
   document.getElementById('taskDateClose').value=task.date_close||'';
@@ -648,7 +908,7 @@ function toggleTag(el,cat){
 async function saveTask(){
   const title=document.getElementById('taskTitle').value.trim();
   if(!title){showToast('Le titre est requis','error');return}
-  const data={title,description:document.getElementById('taskDesc').value.trim(),status:document.getElementById('taskStatus').value,priority:document.getElementById('taskPriority').value,version:document.getElementById('taskVersion').value||'1.0.0',assignee:document.getElementById('taskAssignee').value.trim(),date_open:document.getElementById('taskDateOpen').value||null,date_close:document.getElementById('taskDateClose').value||null,categories:selectedTags.join(', ')||'autre'};
+  const data={title,description:document.getElementById('taskDesc').value.trim(),status:document.getElementById('taskStatus').value,priority:prioToInt(document.getElementById('taskPriority').value),version:document.getElementById('taskVersion').value||DEFAULT_VERSION,assignee:document.getElementById('taskAssignee').value.trim(),date_open:document.getElementById('taskDateOpen').value||null,date_close:document.getElementById('taskDateClose').value||null,category:selectedTags.join(', ')||'autre',project_id:currentProjectId};
   closeModal();
   if(editingId){
     tasks=tasks.map(t=>String(t.id)===String(editingId)?{...t,...data}:t);
@@ -670,121 +930,394 @@ async function deleteTask(id){
   showToast('Carte supprimée','info');
 }
 
-/* =====================================================
-   IMPORT JSON — VERSION CORRIGÉE
-   Problème original : tasks était mis à jour manuellement
-   avec push() mais Supabase retournait parfois des erreurs
-   silencieuses. Maintenant : insert par batch + reload complet.
-   ===================================================== */
+/* ===================== IMPORT / EXPORT JSON ===================== */
+function openExport(){document.getElementById('exportModal').style.display='flex';}
 async function importJSON(e){
   const file=e.target.files[0];
   if(!file)return;
   e.target.value='';
-
   const reader=new FileReader();
   reader.onload=async ev=>{
     let arr=[];
     try{
       const parsed=JSON.parse(ev.target.result);
       arr=Array.isArray(parsed)?parsed:(parsed.tasks||[]);
-    }catch{
-      showToast('Fichier JSON invalide ❌','error');
-      return;
-    }
+    }catch{showToast('Fichier JSON invalide ❌','error');return;}
     if(arr.length===0){showToast('Aucune carte trouvée dans le fichier','error');return;}
-
     showToast(`Import de ${arr.length} cartes en cours...`,'info');
-
-    // Sanitize toutes les cartes (normalise priority, category, champs manquants)
     const toInsert=arr.map(t=>sanitizeTask(t));
-
-    // Insert en batch par tranches de 50 pour éviter les timeouts
-    const BATCH=50;
-    let inserted=0;
-    let errors=0;
+    const BATCH=50;let inserted=0,errors=0;
     for(let i=0;i<toInsert.length;i+=BATCH){
       const chunk=toInsert.slice(i,i+BATCH);
       const{data:res,error}=await sb.from('tasks').insert(chunk).select();
-      if(error){
-        console.error('Import error:',error);
-        errors+=chunk.length;
-      }else{
-        inserted+=(res||[]).length;
-      }
+      if(error){console.error('Import error:',error);errors+=chunk.length;}
+      else{inserted+=(res||[]).length;}
     }
-
-    // Reload complet depuis Supabase — source de vérité unique
     await loadTasks();
-
-    if(errors>0){
-      showToast(`${inserted} cartes importées, ${errors} erreurs`,'info');
-    }else{
-      showToast(`✅ ${inserted} cartes importées avec succès !`,'success');
-    }
+    document.getElementById('exportModal').style.display='none';
+    if(errors>0)showToast(`${inserted} cartes importées, ${errors} erreurs`,'info');
+    else showToast(`✅ ${inserted} cartes importées avec succès !`,'success');
   };
   reader.readAsText(file);
 }
-
-/* AI */
-function openAiPanel(){
-  document.getElementById('aiModal').style.display='flex';
-  document.getElementById('aiStatus').style.display='none';
-  document.getElementById('aiResult').style.display='none';
-  document.getElementById('aiInitial').style.display='block';
-  document.getElementById('aiJsonWrap').style.display='none';
-  document.getElementById('aiAnalyzeBtn').disabled=false;
-}
-async function runAiAnalysis(){
-  document.getElementById('aiInitial').style.display='none';
-  document.getElementById('aiStatus').style.display='flex';
-  document.getElementById('aiResult').style.display='none';
-  document.getElementById('aiJsonWrap').style.display='none';
-  document.getElementById('aiAnalyzeBtn').disabled=true;
-  const tasksForAi=tasks.map(t=>({id:t.id,title:t.title,description:t.description||'',status:t.status,priority:normPrio(t.priority),categories:t.categories||t.category||'',date_close:t.date_close||null}));
-  const today=new Date().toLocaleDateString('fr-FR');
-  const prompt=`Tu es un expert en gestion de projet agile. Analyse ce board Kanban pour l'application MegaTv (date : ${today}).\n\nCartes (${tasksForAi.length}):\n${JSON.stringify(tasksForAi,null,2)}\n\nRéponds UNIQUEMENT en JSON valide sans markdown:\n{"summary":"...","recommendations":["..."],"top_priority":["..."],"optimized_tasks":[{"id":"...","title":"...","status":"...","priority":"critical|high|medium|low","categories":"...","date_close":null,"sort_order":1}]}`;
-  try{
-    const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:2000,system:'Réponds UNIQUEMENT en JSON valide, sans markdown, sans backticks.',messages:[{role:'user',content:prompt}]})});
-    const data=await res.json();
-    const text=data.content?.find(b=>b.type==='text')?.text||'{}';
-    let result;try{result=JSON.parse(text)}catch{result=JSON.parse(text.replace(/```json|```/g,'').trim())}
-    document.getElementById('aiStatus').style.display='none';
-    document.getElementById('aiResult').style.display='block';
-    document.getElementById('aiResult').innerHTML=`<strong>📊 Résumé</strong><br>${result.summary||''}<br><br><strong>🎯 Recommandations</strong><br>${(result.recommendations||[]).map(r=>`• ${r}`).join('<br>')}<br><br><strong>🔥 À traiter en priorité</strong><br>${(result.top_priority||[]).map(r=>`• ${r}`).join('<br>')}`;
-    if(result.optimized_tasks){aiJsonData=result.optimized_tasks;document.getElementById('aiJsonOutput').textContent=JSON.stringify(result.optimized_tasks,null,2);document.getElementById('aiJsonWrap').style.display='block';}
-    document.getElementById('aiAnalyzeBtn').disabled=false;
-  }catch(err){
-    document.getElementById('aiStatus').style.display='none';
-    document.getElementById('aiResult').style.display='block';
-    document.getElementById('aiResult').innerHTML=`<span style="color:var(--red)">Erreur : ${err.message}</span>`;
-    document.getElementById('aiAnalyzeBtn').disabled=false;
-  }
-}
-function copyAiJson(){if(!aiJsonData)return;navigator.clipboard.writeText(JSON.stringify(aiJsonData,null,2));showToast('JSON copié','success');}
-function importAiJson(){
-  if(!aiJsonData)return;
-  aiJsonData.forEach(u=>{const t=tasks.find(t=>String(t.id)===String(u.id));if(t){t.priority=u.priority||t.priority;t.status=u.status||t.status;t.categories=u.categories||t.categories;}});
-  render();document.getElementById('aiModal').style.display='none';
-  showToast(`${aiJsonData.length} cartes mises à jour par l'IA`,'success');
-}
-
 function exportJSON(){
   const blob=new Blob([JSON.stringify(tasks,null,2)],{type:'application/json'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);
-  a.download=`megatv-board-${new Date().toISOString().split('T')[0]}.json`;a.click();
+  const pname=(projects.find(p=>p.id===currentProjectId)?.name||'board').toLowerCase().replace(/\s/g,'-');
+  a.download=`${pname}-${new Date().toISOString().split('T')[0]}.json`;a.click();
   showToast('Export téléchargé','success');
 }
 
+/* ===================== RÉGLAGES IA ===================== */
+function getAiConfig(){
+  return{
+    provider:localStorage.getItem('megatv_ai_provider')||'gemini',
+    key:localStorage.getItem('megatv_ai_key')||'',
+  };
+}
+function openSettings(){
+  const cfg=getAiConfig();
+  document.getElementById('aiProvider').value=cfg.provider;
+  document.getElementById('aiKey').value=cfg.key;
+  onProviderChange();
+  document.getElementById('settingsModal').style.display='flex';
+}
+function onProviderChange(){
+  const prov=document.getElementById('aiProvider').value;
+  const hint=document.getElementById('providerHint');
+  if(prov==='gemini')hint.innerHTML='Gratuit. Clé : <a href="https://aistudio.google.com/app/apikey" target="_blank">aistudio.google.com/app/apikey</a> → "Create API key".';
+  else hint.innerHTML='Clé : <a href="https://console.anthropic.com/settings/keys" target="_blank">console.anthropic.com</a>. (Crédits requis.)';
+}
+function saveSettings(){
+  localStorage.setItem('megatv_ai_provider',document.getElementById('aiProvider').value);
+  localStorage.setItem('megatv_ai_key',document.getElementById('aiKey').value.trim());
+  document.getElementById('settingsModal').style.display='none';
+  updateProviderTag();
+  showToast('Réglages enregistrés','success');
+}
+function updateProviderTag(){
+  const cfg=getAiConfig();
+  document.getElementById('providerTag').innerHTML=`<i class="ti ti-sparkles"></i>${cfg.provider==='gemini'?'Gemini':'Claude'}`;
+}
+
+/* ===================== NOTES IA ===================== */
+function openNotes(){
+  document.getElementById('rawNotes').value='';
+  document.getElementById('notesError').style.display='none';
+  document.getElementById('notesThinking').style.display='none';
+  document.getElementById('analyzeBtn').disabled=false;
+  updateProviderTag();
+  document.getElementById('notesModal').style.display='flex';
+  setTimeout(()=>document.getElementById('rawNotes').focus(),100);
+}
+
+function buildPrompt(notes,boardTasks){
+  const today=new Date().toLocaleDateString('fr-FR');
+  const board=boardTasks.map(t=>({
+    id:t.id,title:t.title,description:t.description||'',
+    status:t.status,priority:prioToInt(t.priority),
+    category:normCat(t.categories||t.category||''),
+    version:t.version||DEFAULT_VERSION,date_close:t.date_close||null
+  }));
+  return `Tu es un chef de projet agile expert pour l'application "${esc(projects.find(p=>p.id===currentProjectId)?.name||'MegaTv')}". Date du jour : ${today}.
+
+VOICI MES NOTES BRUTES (notes vocales transcrites, en vrac) :
+"""
+${notes}
+"""
+
+VOICI L'ÉTAT ACTUEL COMPLET DU BOARD KANBAN (JSON) :
+${JSON.stringify(board,null,2)}
+
+CONSIGNES :
+1. Transforme mes notes brutes en tâches claires, concises et reformulées (titre actionnable + description si utile).
+2. Pour CHAQUE nouvelle tâche, assigne :
+   - "status" parmi EXACTEMENT : "En attente", "En cours de développement", "En cours de vérification", "Terminé", "Bloqué".
+   - "category" parmi EXACTEMENT : "Bug", "UI", "Ajout", "Amélioration".
+   - "priority" : entier 1, 2 ou 3 (1 = Urgent/Bloquant, 2 = Important, 3 = Souhaitable).
+   - "version" : "${DEFAULT_VERSION}".
+3. Détecte les DOUBLONS : si une note correspond à une carte déjà présente, ne crée PAS de nouvelle carte, mets-la dans "duplicates" en référençant l'id existant.
+4. Propose des RÉAJUSTEMENTS sur les cartes existantes (changement de priorité ou de statut) si les nouvelles urgences détectées le justifient. Mets-les dans "existing_updates".
+5. Donne un court "summary" de ton analyse.
+
+RÉPONDS UNIQUEMENT EN JSON VALIDE (aucun markdown, aucun backtick), avec EXACTEMENT cette structure :
+{
+  "summary": "résumé court",
+  "new_cards": [
+    {"title":"...","description":"...","status":"En attente","category":"Bug","priority":1,"version":"${DEFAULT_VERSION}","reason":"pourquoi cette carte/priorité"}
+  ],
+  "duplicates": [
+    {"note":"texte de la note","existing_id":"id de la carte existante","existing_title":"titre existant","reason":"pourquoi c'est un doublon"}
+  ],
+  "existing_updates": [
+    {"id":"id de la carte","title":"titre actuel","new_priority":1,"new_status":"En cours de développement","reason":"justification du réajustement"}
+  ]
+}
+Si une section est vide, renvoie un tableau vide. N'invente pas d'id : pour "duplicates" et "existing_updates", utilise UNIQUEMENT les id présents dans le board fourni.`;
+}
+
+async function callAI(prompt){
+  const cfg=getAiConfig();
+  if(!cfg.key)throw new Error('NO_KEY');
+  if(cfg.provider==='gemini'){
+    const url=`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${encodeURIComponent(cfg.key)}`;
+    const res=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+      contents:[{parts:[{text:prompt}]}],
+      generationConfig:{temperature:0.3,responseMimeType:'application/json'}
+    })});
+    const data=await res.json();
+    if(data.error)throw new Error(data.error.message||'Erreur Gemini');
+    return data.candidates?.[0]?.content?.parts?.[0]?.text||'{}';
+  }else{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{
+      'Content-Type':'application/json',
+      'x-api-key':cfg.key,
+      'anthropic-version':'2023-06-01',
+      'anthropic-dangerous-direct-browser-access':'true'
+    },body:JSON.stringify({
+      model:'claude-3-5-sonnet-20241022',max_tokens:4000,
+      system:'Réponds UNIQUEMENT en JSON valide, sans markdown, sans backticks.',
+      messages:[{role:'user',content:prompt}]
+    })});
+    const data=await res.json();
+    if(data.error)throw new Error(data.error.message||'Erreur Anthropic');
+    return data.content?.find(b=>b.type==='text')?.text||'{}';
+  }
+}
+
+function parseAiJson(text){
+  let t=String(text).trim();
+  try{return JSON.parse(t);}catch{}
+  t=t.replace(/```json|```/g,'').trim();
+  try{return JSON.parse(t);}catch{}
+  const start=t.indexOf('{'),end=t.lastIndexOf('}');
+  if(start>=0&&end>start)return JSON.parse(t.slice(start,end+1));
+  throw new Error('Réponse IA non parsable');
+}
+
+async function analyzeNotes(){
+  const notes=document.getElementById('rawNotes').value.trim();
+  if(!notes){showToast('Collez d\'abord vos notes','error');return;}
+  const cfg=getAiConfig();
+  if(!cfg.key){document.getElementById('notesModal').style.display='none';openSettings();showToast('Configurez votre clé API d\'abord','error');return;}
+  document.getElementById('notesError').style.display='none';
+  document.getElementById('notesThinking').style.display='flex';
+  document.getElementById('analyzeBtn').disabled=true;
+  try{
+    // On récupère l'état frais du board depuis Supabase
+    await loadTasks();
+    const prompt=buildPrompt(notes,tasks);
+    const raw=await callAI(prompt);
+    const result=parseAiJson(raw);
+    aiPlan=normalizePlan(result);
+    aiRawNotes=notes;
+    document.getElementById('notesThinking').style.display='none';
+    document.getElementById('analyzeBtn').disabled=false;
+    document.getElementById('notesModal').style.display='none';
+    openValidation();
+  }catch(err){
+    document.getElementById('notesThinking').style.display='none';
+    document.getElementById('analyzeBtn').disabled=false;
+    const el=document.getElementById('notesError');
+    el.style.display='block';
+    el.textContent=err.message==='NO_KEY'?'Aucune clé API configurée (icône ⚙️).':('Erreur : '+err.message);
+  }
+}
+
+function normalizePlan(r){
+  r=r||{};
+  return{
+    summary:r.summary||'',
+    new_cards:(r.new_cards||[]).map(c=>({
+      title:c.title||'Sans titre',description:c.description||'',
+      status:VALID_STATUS.includes(c.status)?c.status:'En attente',
+      category:c.category||'Ajout',priority:Number(c.priority)||2,
+      version:c.version||DEFAULT_VERSION,reason:c.reason||''
+    })),
+    duplicates:(r.duplicates||[]).map(d=>({
+      note:d.note||'',existing_id:d.existing_id||null,
+      existing_title:d.existing_title||(tasks.find(t=>String(t.id)===String(d.existing_id))?.title)||'',
+      reason:d.reason||''
+    })),
+    existing_updates:(r.existing_updates||[]).filter(u=>tasks.find(t=>String(t.id)===String(u.id))).map(u=>{
+      const t=tasks.find(x=>String(x.id)===String(u.id));
+      return{
+        id:u.id,title:u.title||t.title,
+        old_priority:prioToInt(t.priority),old_status:t.status,
+        new_priority:u.new_priority!=null?Number(u.new_priority):null,
+        new_status:VALID_STATUS.includes(u.new_status)?u.new_status:null,
+        reason:u.reason||''
+      };
+    })
+  };
+}
+
+/* ===================== VALIDATION ===================== */
+function planToHtml(plan,withChecks){
+  const newCards=plan.new_cards||[],dups=plan.duplicates||[],upds=plan.existing_updates||[];
+  let html='';
+  if(plan.summary)html+=`<div class="ai-panel"><div class="ai-panel-title"><i class="ti ti-robot"></i>Synthèse de l'IA</div><div class="ai-result">${esc(plan.summary)}</div></div>`;
+
+  html+=`<div class="diff-section"><div class="diff-head new"><i class="ti ti-plus"></i>Nouvelles cartes<span class="badge">${newCards.length}</span></div>`;
+  if(newCards.length===0)html+='<div class="diff-empty">Aucune nouvelle carte proposée.</div>';
+  newCards.forEach((c,i)=>{
+    html+=`<div class="diff-item">
+      <div class="diff-item-title">
+        ${withChecks?`<input type="checkbox" class="diff-check" data-type="new" data-i="${i}" checked>`:''}
+        <span class="tag ${normCat(c.category)}">${catLabel(normCat(c.category))}</span>
+        ${esc(c.title)}
+        <span class="chg"><span class="new">${esc(c.status)}</span></span>
+        <span class="chg">Prio ${c.priority} · ${esc(intPrioLabel(c.priority))}</span>
+      </div>
+      ${c.description?`<div style="font-size:12px;color:var(--text2);line-height:1.5">${esc(c.description)}</div>`:''}
+      ${c.reason?`<div class="diff-reason"><i class="ti ti-bulb"></i>${esc(c.reason)}</div>`:''}
+    </div>`;
+  });
+  html+='</div>';
+
+  html+=`<div class="diff-section"><div class="diff-head dup"><i class="ti ti-copy"></i>Doublons ignorés<span class="badge">${dups.length}</span></div>`;
+  if(dups.length===0)html+='<div class="diff-empty">Aucun doublon détecté.</div>';
+  dups.forEach(d=>{
+    html+=`<div class="diff-item dim">
+      <div class="diff-item-title"><i class="ti ti-arrow-back-up" style="color:var(--text3)"></i>${esc(d.note||'(note)')}</div>
+      <div style="font-size:12px;color:var(--text2)">↳ déjà présent : <strong>${esc(d.existing_title)}</strong></div>
+      ${d.reason?`<div class="diff-reason"><i class="ti ti-bulb"></i>${esc(d.reason)}</div>`:''}
+    </div>`;
+  });
+  html+='</div>';
+
+  html+=`<div class="diff-section"><div class="diff-head upd"><i class="ti ti-adjustments"></i>Réajustements proposés<span class="badge">${upds.length}</span></div>`;
+  if(upds.length===0)html+='<div class="diff-empty">Aucun réajustement proposé.</div>';
+  upds.forEach((u,i)=>{
+    let chips='';
+    if(u.new_priority!=null&&u.new_priority!==u.old_priority)
+      chips+=`<span class="chg">Priorité <span class="old">${u.old_priority}</span><span class="arrow">→</span><span class="new">${u.new_priority}</span></span>`;
+    if(u.new_status&&u.new_status!==u.old_status)
+      chips+=`<span class="chg">Statut <span class="old">${esc(u.old_status)}</span><span class="arrow">→</span><span class="new">${esc(u.new_status)}</span></span>`;
+    if(!chips)chips='<span class="chg">Aucun changement effectif</span>';
+    html+=`<div class="diff-item">
+      <div class="diff-item-title">
+        ${withChecks?`<input type="checkbox" class="diff-check" data-type="upd" data-i="${i}" checked>`:''}
+        ${esc(u.title)}
+      </div>
+      <div>${chips}</div>
+      ${u.reason?`<div class="diff-reason"><i class="ti ti-bulb"></i>${esc(u.reason)}</div>`:''}
+    </div>`;
+  });
+  html+='</div>';
+  return html;
+}
+
+function openValidation(){
+  if(!aiPlan)return;
+  document.getElementById('validationBody').innerHTML=planToHtml(aiPlan,true);
+  document.getElementById('applyBtn').disabled=false;
+  document.getElementById('validationModal').style.display='flex';
+}
+
+async function applyAiPlan(){
+  if(!aiPlan)return;
+  const btn=document.getElementById('applyBtn');
+  btn.disabled=true;
+  // sélection via cases à cocher
+  const checkedNew=[...document.querySelectorAll('.diff-check[data-type="new"]:checked')].map(c=>Number(c.dataset.i));
+  const checkedUpd=[...document.querySelectorAll('.diff-check[data-type="upd"]:checked')].map(c=>Number(c.dataset.i));
+
+  let createdCount=0,updatedCount=0;
+
+  // 1) Création des nouvelles cartes
+  const toInsert=checkedNew.map(i=>{
+    const c=aiPlan.new_cards[i];
+    return{
+      title:c.title,description:c.description,
+      status:c.status,priority:Number(c.priority)||2,
+      category:normCat(c.category),version:c.version||DEFAULT_VERSION,
+      assignee:'',date_open:new Date().toISOString().split('T')[0],date_close:null,
+      project_id:currentProjectId
+    };
+  });
+  if(toInsert.length){
+    const{data,error}=await sb.from('tasks').insert(toInsert).select();
+    if(error){console.error(error);showToast('Erreur création cartes','error');}
+    else createdCount=(data||[]).length;
+  }
+
+  // 2) Réajustements sur cartes existantes (upsert via update)
+  for(const i of checkedUpd){
+    const u=aiPlan.existing_updates[i];
+    const patch={};
+    if(u.new_priority!=null)patch.priority=Number(u.new_priority);
+    if(u.new_status)patch.status=u.new_status;
+    if(Object.keys(patch).length){
+      const{error}=await sb.from('tasks').update(patch).eq('id',u.id);
+      if(!error)updatedCount++;
+    }
+  }
+
+  // 3) Sauvegarde du rapport dans l'historique
+  await sb.from('ai_import_history').insert([{
+    project_id:currentProjectId,
+    raw_notes:aiRawNotes,
+    summary:aiPlan.summary||'',
+    new_count:createdCount,
+    duplicate_count:(aiPlan.duplicates||[]).length,
+    update_count:updatedCount,
+    report:aiPlan
+  }]);
+
+  await loadTasks();
+  document.getElementById('validationModal').style.display='none';
+  showToast(`✅ ${createdCount} carte(s) créée(s), ${updatedCount} mise(s) à jour`,'success');
+  aiPlan=null;aiRawNotes='';
+}
+
+/* ===================== HISTORIQUE ===================== */
+async function openHistory(){
+  document.getElementById('historyBody').innerHTML='<div class="ai-thinking"><div class="dot-anim"><span></span><span></span><span></span></div><span>Chargement...</span></div>';
+  document.getElementById('historyModal').style.display='flex';
+  const{data,error}=await sb.from('ai_import_history').select('*').eq('project_id',currentProjectId).order('created_at',{ascending:false});
+  if(error){document.getElementById('historyBody').innerHTML='<div class="diff-empty">Erreur de chargement (la table ai_import_history existe-t-elle ?).</div>';return;}
+  if(!data||data.length===0){document.getElementById('historyBody').innerHTML='<div class="empty-col"><i class="ti ti-history"></i>Aucun import IA pour ce projet</div>';return;}
+  window._history=data;
+  let html='';
+  data.forEach((h,idx)=>{
+    const d=new Date(h.created_at).toLocaleString('fr-FR',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
+    html+=`<div class="hist-item" onclick="openHistoryDetail(${idx})">
+      <div class="hist-top">
+        <div class="hist-date"><i class="ti ti-calendar"></i>${d}</div>
+        <div class="hist-counts">
+          <span style="background:var(--green-bg);color:var(--green)">+${h.new_count||0} créées</span>
+          <span style="background:var(--orange-bg);color:var(--orange)">${h.update_count||0} maj</span>
+          <span style="background:var(--surface2);color:var(--text2)">${h.duplicate_count||0} doublons</span>
+        </div>
+      </div>
+      <div class="hist-summary">${esc(h.summary||'(pas de résumé)')}</div>
+    </div>`;
+  });
+  document.getElementById('historyBody').innerHTML=html;
+}
+function openHistoryDetail(idx){
+  const h=(window._history||[])[idx];
+  if(!h)return;
+  const plan=h.report||{summary:h.summary,new_cards:[],duplicates:[],existing_updates:[]};
+  let head=`<div style="font-size:12px;color:var(--text3);margin-bottom:14px"><i class="ti ti-microphone"></i> Notes brutes :<div style="background:var(--bg);border:1px solid var(--border2);border-radius:8px;padding:10px;margin-top:6px;color:var(--text2);line-height:1.5;white-space:pre-wrap">${esc(h.raw_notes||'')}</div></div>`;
+  document.getElementById('historyDetailBody').innerHTML=head+planToHtml(plan,false);
+  document.getElementById('historyDetailModal').style.display='flex';
+}
+
+/* ===================== TOAST / LOAD ===================== */
 function showToast(msg,type='info'){
   const icons={success:'ti-circle-check',error:'ti-circle-x',info:'ti-info-circle'};
   const t=document.createElement('div');t.className=`toast ${type}`;
-  t.innerHTML=`<i class="ti ${icons[type]}" style="font-size:18px"></i>${msg}`;
+  t.innerHTML=`<i class="ti ${icons[type]}" style="font-size:18px"></i>${esc(msg)}`;
   document.body.appendChild(t);
   setTimeout(()=>{t.style.opacity='0';t.style.transform='translateY(8px)';t.style.transition='all 0.3s';setTimeout(()=>t.remove(),300)},3500);
 }
 
 async function loadTasks(){
-  const{data,error}=await sb.from('tasks').select('*').order('created_at',{ascending:false});
+  let q=sb.from('tasks').select('*');
+  if(currentProjectId)q=q.eq('project_id',currentProjectId);
+  const{data,error}=await q.order('created_at',{ascending:false});
   if(error)console.error('loadTasks error:',error);
   tasks=data||[];
   render();
@@ -792,6 +1325,8 @@ async function loadTasks(){
 
 async function init(){
   buildBoard();
+  updateProviderTag();
+  await loadProjects();
   await loadTasks();
   document.getElementById('loadingOverlay').style.opacity='0';
   document.getElementById('loadingOverlay').style.transition='opacity 0.4s';
@@ -799,7 +1334,10 @@ async function init(){
 }
 
 document.addEventListener('keydown',e=>{
-  if(e.key==='Escape')closeModal();
+  if(e.key==='Escape'){
+    closeModal();
+    ['notesModal','validationModal','historyModal','historyDetailModal','settingsModal','projectModal','exportModal'].forEach(id=>{const m=document.getElementById(id);if(m)m.style.display='none';});
+  }
   if((e.ctrlKey||e.metaKey)&&e.key==='k'){e.preventDefault();openAddTask(null)}
 });
 

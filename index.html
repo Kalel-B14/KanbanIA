@@ -219,6 +219,45 @@ select.filter-select option{background:var(--bg2)}
 input[type=date]{color-scheme:dark}
 ::-webkit-scrollbar{width:6px;height:6px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
 .json-preview{background:var(--bg);border:1px solid var(--border2);border-radius:var(--radius-sm);padding:12px;font-family:monospace;font-size:11px;color:var(--text2);max-height:160px;overflow-y:auto;white-space:pre-wrap;word-break:break-all;}
+.toast{max-width:calc(100vw - 32px)}
+
+/* ============ RESPONSIVE / MOBILE ============ */
+@media (max-width:860px){
+  .header{padding:0 12px;gap:8px}
+  .logo-sub{display:none}
+  .header-actions{gap:6px;flex:1;justify-content:flex-end;overflow-x:auto;scrollbar-width:none}
+  .header-actions::-webkit-scrollbar{height:0}
+  .header-actions .btn{padding:7px 10px}
+  .header-actions .btn .btn-label{display:none}
+  .project-btn{max-width:42vw}
+  #currentProjectName{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:inline-block;max-width:30vw}
+  .project-menu{min-width:min(280px,80vw);max-width:80vw}
+  .stats-bar{gap:16px;padding:0 12px}
+  .filter-bar{padding:8px 12px;gap:6px}
+  .board-wrap{padding:14px 12px 28px;gap:12px;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch}
+  :root{--col-w:85vw}
+  .column{scroll-snap-align:center;max-height:calc(100vh - 180px)}
+  /* actions des cartes accessibles sans survol (tactile) */
+  .card-actions{display:flex}
+  .card-top{padding-right:60px}
+  .modal{width:100%!important;max-width:100vw;max-height:100vh;height:100vh;border-radius:0;border-left:none;border-right:none}
+  .modal-header{padding:16px 16px 12px}
+  .modal-body{padding:16px}
+  .modal-footer{padding:14px 16px;padding-bottom:max(14px,env(safe-area-inset-bottom))}
+  .form-row{grid-template-columns:1fr;gap:0}
+  .modal-footer .btn{flex:1;justify-content:center}
+}
+@media (max-width:520px){
+  .logo-title{display:none}
+  .header-actions .btn{padding:7px 9px}
+  .stat-item:nth-child(n+4){display:none}
+  .stats-bar>div:last-child{margin-left:auto}
+}
+/* écrans tactiles : afficher les actions de carte (pas de hover) */
+@media (hover:none){
+  .card-actions{display:flex}
+  .card-top{padding-right:60px}
+}
 </style>
 </head>
 <body>
@@ -242,11 +281,11 @@ input[type=date]{color-scheme:dark}
   <div class="header-actions">
     <button class="btn-icon" onclick="toggleFilters()" id="filterToggleBtn" title="Filtres"><i class="ti ti-filter"></i></button>
     <button class="btn-icon" onclick="openSettings()" title="Réglages IA"><i class="ti ti-settings"></i></button>
-    <button class="btn" onclick="openHistory()"><i class="ti ti-history"></i>Historique</button>
-    <button class="btn" onclick="openExport()" title="Export / Import JSON"><i class="ti ti-file-export"></i>JSON</button>
+    <button class="btn" onclick="openHistory()" title="Historique"><i class="ti ti-history"></i><span class="btn-label">Historique</span></button>
+    <button class="btn" onclick="openExport()" title="Export / Import JSON"><i class="ti ti-file-export"></i><span class="btn-label">JSON</span></button>
     <input type="file" id="importFile" style="display:none" accept=".json" onchange="importJSON(event)">
-    <button class="btn primary" onclick="openNotes()"><i class="ti ti-sparkles"></i>Notes IA</button>
-    <button class="btn primary" onclick="openAddTask(null)"><i class="ti ti-plus"></i>Carte</button>
+    <button class="btn primary" onclick="openNotes()" title="Notes IA"><i class="ti ti-sparkles"></i><span class="btn-label">Notes IA</span></button>
+    <button class="btn primary" onclick="openAddTask(null)" title="Nouvelle carte"><i class="ti ti-plus"></i><span class="btn-label">Carte</span></button>
   </div>
 </div>
 
@@ -396,7 +435,7 @@ input[type=date]{color-scheme:dark}
         <div class="form-label"><i class="ti ti-microphone"></i>Vos notes brutes</div>
         <textarea class="form-textarea big" id="rawNotes" placeholder="Ex : alors faut absolument corriger le bug du player qui freeze sur la page details, c'est urgent... aussi penser à refaire le design de la sidebar c'est moche... et ajouter un mode sombre ce serait cool mais pas prioritaire..."></textarea>
       </div>
-      <div id="notesThinking" class="ai-thinking" style="display:none"><div class="dot-anim"><span></span><span></span><span></span></div><span>L'IA analyse vos notes et le board...</span></div>
+      <div id="notesThinking" class="ai-thinking" style="display:none"><div class="dot-anim"><span></span><span></span><span></span></div><span id="thinkingText">L'IA analyse vos notes et le board...</span></div>
       <div id="notesError" style="display:none;color:var(--red);font-size:13px;line-height:1.5"></div>
     </div>
     <div class="modal-footer">
@@ -1093,20 +1132,58 @@ RÉPONDS UNIQUEMENT EN JSON VALIDE (aucun markdown, aucun backtick), avec EXACTE
 Si une section est vide, renvoie un tableau vide. N'invente pas d'id : pour "duplicates" et "existing_updates", utilise UNIQUEMENT les id présents dans le board fourni.`;
 }
 
+const GEMINI_FALLBACKS=['gemini-2.5-flash','gemini-2.5-flash-lite','gemini-flash-latest','gemini-2.0-flash-lite'];
+function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
+function setThinking(msg){const el=document.getElementById('thinkingText');if(el)el.textContent=msg;}
+
+async function fetchWithTimeout(url,opts,ms=45000){
+  const ctrl=new AbortController();
+  const id=setTimeout(()=>ctrl.abort(),ms);
+  try{return await fetch(url,{...opts,signal:ctrl.signal});}
+  finally{clearTimeout(id);}
+}
+
+async function geminiRequest(model,key,prompt){
+  const url=`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(key)}`;
+  let res;
+  try{
+    res=await fetchWithTimeout(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+      contents:[{parts:[{text:prompt}]}],
+      generationConfig:{temperature:0.3,responseMimeType:'application/json'}
+    })});
+  }catch(e){const err=new Error(e.name==='AbortError'?'Délai dépassé (timeout)':'Réseau indisponible');err.status=503;throw err;}
+  const data=await res.json().catch(()=>({}));
+  if(data.error){const err=new Error(data.error.message||'Erreur Gemini');err.status=data.error.code||res.status;throw err;}
+  const text=data.candidates?.[0]?.content?.parts?.[0]?.text;
+  if(!text){const err=new Error('Réponse vide du modèle');err.status=res.status;throw err;}
+  return text;
+}
+
 async function callAI(prompt){
   const cfg=getAiConfig();
   if(!cfg.key)throw new Error('NO_KEY');
   if(cfg.provider==='gemini'){
-    const url=`https://generativelanguage.googleapis.com/v1beta/models/${cfg.model}:generateContent?key=${encodeURIComponent(cfg.key)}`;
-    const res=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
-      contents:[{parts:[{text:prompt}]}],
-      generationConfig:{temperature:0.3,responseMimeType:'application/json'}
-    })});
-    const data=await res.json();
-    if(data.error)throw new Error(data.error.message||'Erreur Gemini');
-    return data.candidates?.[0]?.content?.parts?.[0]?.text||'{}';
+    const models=[cfg.model,...GEMINI_FALLBACKS.filter(m=>m!==cfg.model)];
+    let lastErr;
+    for(let mi=0;mi<models.length;mi++){
+      const model=models[mi];
+      for(let attempt=0;attempt<2;attempt++){
+        try{
+          if(mi>0||attempt>0)setThinking(`Nouvelle tentative (${model})...`);
+          return await geminiRequest(model,cfg.key,prompt);
+        }catch(err){
+          lastErr=err;
+          const msg=(err.message||'').toLowerCase();
+          if(/api key|permission|unauthor|invalid argument|api_key/.test(msg))throw err; // erreur fatale : inutile d'insister
+          const transient=/high demand|overloaded|unavailable|try again|exhaust|rate|quota|limit|timeout|réseau|503|500|429/.test(msg)||[429,500,503].includes(err.status);
+          if(transient&&attempt===0){await sleep(2000);continue;} // une relance sur le même modèle
+          break; // sinon on passe au modèle suivant
+        }
+      }
+    }
+    throw lastErr||new Error('Échec Gemini');
   }else{
-    const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{
+    const res=await fetchWithTimeout('https://api.anthropic.com/v1/messages',{method:'POST',headers:{
       'Content-Type':'application/json',
       'x-api-key':cfg.key,
       'anthropic-version':'2023-06-01',
@@ -1116,7 +1193,7 @@ async function callAI(prompt){
       system:'Réponds UNIQUEMENT en JSON valide, sans markdown, sans backticks.',
       messages:[{role:'user',content:prompt}]
     })});
-    const data=await res.json();
+    const data=await res.json().catch(()=>({}));
     if(data.error)throw new Error(data.error.message||'Erreur Anthropic');
     return data.content?.find(b=>b.type==='text')?.text||'{}';
   }
@@ -1138,6 +1215,7 @@ async function analyzeNotes(){
   const cfg=getAiConfig();
   if(!cfg.key){document.getElementById('notesModal').style.display='none';openSettings();showToast('Configurez votre clé API d\'abord','error');return;}
   document.getElementById('notesError').style.display='none';
+  setThinking('L\'IA analyse vos notes et le board...');
   document.getElementById('notesThinking').style.display='flex';
   document.getElementById('analyzeBtn').disabled=true;
   try{
